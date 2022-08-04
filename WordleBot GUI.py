@@ -1,13 +1,16 @@
+# import libraries
 from math import *
 from tkinter import *
 from tkinter import ttk
-from tkmacosx import Button
 import time
 import sys
 import random
 import os
 
-os.system('xset r off')
+try:
+    from tkmacosx import Button
+except:
+    pass
 
 class WordleBot:
     '''A Bot for a game of Wordle'''
@@ -331,9 +334,12 @@ class WordleBot:
         # filter the answers, if necessary
         if not isFiltered:
             answers = self.filter_solutions(guesses,outcomes,answers)
-
+            
+        if not len(answers):
+            return {}
+        
         if len(answers) < 3:
-            score = len(guesses) + 2 - 1/len(answers)
+            score = len(guesses) + 2 - 1 / len(answers)
                     
             if isEnglish:
                 return {self.ANSWERS[answers[i]] : score for i in range(len(answers))}
@@ -428,7 +434,7 @@ class Tile:
         unlocks the tile button'''
 
         # reset color
-        if keepColor:
+        if not keepColor:
             self.color = 0
             self.tile['bg'] == self.colors[self.color]
             
@@ -636,18 +642,15 @@ class WordleGUI(WordleBot,Frame):
         for guess in bestGuesses.keys():
             self.bestGuessList.insert(END,guess)
             self.bestScoreList.insert(END,'%0.3f' % (bestGuesses[guess]-numGuesses))
-        
-        
-        
-        
+
+# disable key repeats
+os.system('xset r off') 
+
+# main loop
 root = Tk()
 root.title('Wordle Solver')
 main = WordleGUI(root)
 root.mainloop()
 
-'''print('retrieving files...')
-game = WordleBot()
-print("\nCalculating best guesses...")
-while True:
-    game.assist_player() 
-'''
+# enable key repeats because we don't want to mess up the user's computer settings.
+os.system('xset r on') 
