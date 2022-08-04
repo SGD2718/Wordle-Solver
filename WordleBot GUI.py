@@ -22,6 +22,8 @@ class WordleBot:
         self.ANSWERS = []
         self.OUTCOMES = []
 
+        print('Retrieving files...')
+
         with open('guesses.txt','r') as guessfile:
             for line in guessfile:
                 self.GUESSES.append(line[:5])
@@ -377,17 +379,21 @@ class Tile:
         self.colors = ['#3A3A3C','#B1A04C','#618C55']
         
         frame = Frame(master)
-        frame.grid(column=x,row=y+1)
+        frame.grid(column=x+1,row=y+1)
         
-        self.tile = Button(frame,width=100,height=100,          \
-                           bg=self.colors[color],fg='white',    \
-                           activebackground=self.colors[color], \
-                           bd=0,command=self.next_color,        \
-                           text=letter,padx=40,pady=40,         \
-                           justify=CENTER,                      \
-                           font=('clear sans','55','bold'),     \
-                           disabledbackground='#121214',        \
-                           disabledforeground='white')
+        self.tile = Button(
+            frame,width=100,height=100,          
+            bg=self.colors[color],fg='white',    
+            activebackground=self.colors[color], 
+            bd=0,command=self.next_color,        
+            text=letter,padx=40,pady=40,         
+            justify=CENTER,                      
+            font=('clear sans','55','bold'),     
+            disabledbackground='#121214',        
+            disabledforeground='white',          
+            takefocus=0
+        )
+        
         self.tile.pack()
         
         self.set_letter(letter,True)
@@ -420,6 +426,7 @@ class Tile:
             self.color = 0
             self.tile['bg'] = self.colors[self.color]
             self.tile['activebackground'] = self.colors[self.color]
+            
             if autoLock:
                 self.tile['state'] = DISABLED
         else:
@@ -462,64 +469,85 @@ class WordleGUI(WordleBot,Frame):
     '''a GUI for the Wordle Bot'''
     
     def __init__(self, master):
+        # initialize superclasses
         WordleBot.__init__(self)
         Frame.__init__(self,master)
         self.grid()
 
+        # attributes
         self.guesses = []
         self.outcomes = []
 
         self.isCalculating = False
         self.canType = True
 
-        # create the interface
-        Label(self,text='Wordle Bot',font=('clear sans',60,'bold'),anchor=CENTER).grid(columnspan=5)
-        self.gameState = [[Tile(self,' ',0,i,j) for i in range(5)] for j in range(6)]
-        self.calculateButton = Button(self,
-                                      width=150,
-                                      height=35,
-                                      text='Calculate',
-                                      command=self.calculate,
-                                      bg='#618C55',
-                                      font=('clear sans',20,'bold'),
-                                      fg='white',
-                                      activebackground='#91B487',
-                                      disabledbackground='#808080',
-                                      disabledforeground='white')
-        
-        self.calculateButton.grid(row=1,column=6,columnspan=3,sticky=N)
-        Label(self,text='\t').grid(column=5)
-        
-        Label(self,text='Guesses:\n',font=('clear sans',13,'bold')).grid(row=1,column=6,sticky=S)
-        Label(self,text='Guesses\nRemaining:',font=('clear sans',13,'bold')).grid(row=1,column=8,sticky=S)
-        
-        self.bestGuessList = Listbox(self,
-                                     font=('clear sans',20),
-                                     bg='#2B2B2B',
-                                     bd=0,
-                                     height=15,
-                                     highlightthickness=0,
-                                     selectbackground='#3A3A3C',
-                                     width=5)
-        
-        self.bestScoreList = Listbox(self,
-                                     font=('clear sans',20),
-                                     bg='#2B2B2B',
-                                     bd=0,
-                                     height=15,
-                                     highlightthickness=0,
-                                     selectbackground='#3A3A3C',
-                                     width=5)
-        Label(self,text='\t').grid(column=9)
-        self.bestGuessList.grid(row=2,column=6,rowspan=4,sticky=N)
-        Label(self,text='  ').grid(column=7)
-        self.bestScoreList.grid(row=2,column=8,rowspan=4,sticky=N)
-
         # allow user to type stuff
-        self.keyRow = 0
-        self.keyCol = 0
-        master.bind("<BackSpace>", self.delete)
-        master.bind("<KeyPress>", self.keydown)
+        self.keyRow = 0 # cursor row
+        self.keyCol = 0 # cursor column
+        master.bind("<BackSpace>", self.delete) # delete
+        master.bind("<KeyPress>", self.keydown) # keypresses
+
+        # CREATE THE INTERFACE
+        Label(self,text='Wordle Bot',font=('clear sans',60,'bold'),anchor=CENTER).grid(column=1,columnspan=5)
+        self.gameState = [[Tile(self,' ',0,i,j) for i in range(5)] for j in range(6)]
+
+        # The "Calculate" button
+        self.calculateButton = Button(
+            self,
+            width=150,
+            height=35,
+            text='Calculate',
+            command=self.calculate,
+            bg='#618C55',
+            font=('clear sans',20,'bold'),
+            fg='white',
+            activebackground='#B0C5AA',
+            disabledbackground='#808080',
+            disabledforeground='white',
+            takefocus=0
+        )
+        
+        self.calculateButton.grid(row=1,column=7,columnspan=3,sticky=N)
+
+        # The list of the best guesses and their respective scores
+
+        # the list headers
+        Label(self,text='Guesses\n',font=('clear sans',20,'bold')).grid(row=1,column=7,sticky=S)
+        Label(self,text='Guesses\nRemaining',font=('clear sans',20,'bold')).grid(row=1,column=9,sticky=S)
+
+        # the actual lists
+        self.bestGuessList = Listbox(
+            self,
+            font=('clear sans',27),
+            bg='#2B2B2B',
+            bd=0,
+            height=15,
+            highlightthickness=0,
+            selectbackground='#3A3A3C',
+            width=5,
+            takefocus=0
+        )
+        
+        self.bestScoreList = Listbox(
+            self,
+            font=('clear sans',27),
+            bg='#2B2B2B',
+            bd=0,
+            height=15,
+            highlightthickness=0,
+            selectbackground='#3A3A3C',
+            width=5,
+            takefocus=0
+        )
+        
+        self.bestGuessList.grid(row=2,column=7,rowspan=5,sticky=N)
+        self.bestScoreList.grid(row=2,column=9,rowspan=5,sticky=N)
+
+        # spacing
+        Label(self,text='\t').grid(column=0)
+        Label(self,text='\t').grid(column=6)
+        Label(self,text='  ').grid(column=8)
+        Label(self,text='\t').grid(column=10)
         
     def keydown(self,event):
         '''When the user types something'''
@@ -640,8 +668,8 @@ class WordleGUI(WordleBot,Frame):
         # add the stuff to the list box
         numGuesses = len(self.guesses)
         for guess in bestGuesses.keys():
-            self.bestGuessList.insert(END,guess)
-            self.bestScoreList.insert(END,'%0.3f' % (bestGuesses[guess]-numGuesses))
+            self.bestGuessList.insert(END,' '+guess)
+            self.bestScoreList.insert(END,' %0.3f' % (bestGuesses[guess]-numGuesses))
 
 # disable key repeats
 os.system('xset r off') 
@@ -649,7 +677,9 @@ os.system('xset r off')
 # main loop
 root = Tk()
 root.title('Wordle Solver')
+root.geometry('893x750')
 main = WordleGUI(root)
+root.resizable(False, False)
 root.mainloop()
 
 # enable key repeats because we don't want to mess up the user's computer settings.
