@@ -8,7 +8,7 @@ import random
 import os
 
 try:
-    from tkmacosx import Button
+    from tkmacosx import Button, Scrollbar
 except:
     pass
 
@@ -136,10 +136,8 @@ class WordleBot:
         # state or if we've made too many
         # guesses
         if len(answers) < 3:
-            #print('branch ended')
             return len(guesses) + 2 - 1 / len(answers)
         elif len(guesses) >= cutoff:
-            #print('branch terminated')
             return len(guesses)
 
         # get the top 'nodes' guesses
@@ -300,7 +298,7 @@ class WordleBot:
                 
         return eScore
 
-    def get_best_guesses(self, guesses, outcomes, answers=list(range(2315)), isFiltered=False, isEnglish=False, nodes=15):
+    def get_best_guesses(self, guesses, outcomes, answers=list(range(2315)), isFiltered=False, isEnglish=False, nodes=19):
         '''WordleBot.get_best_guesses(guesses, outcomes, amt, answers, isFiltered, nodes) -> list
         returns the indices of the top n best guesses, or just returns those guesses.
             guesses: the indices of all the guesses or the guesses themselves
@@ -319,19 +317,23 @@ class WordleBot:
         # forever to compute so it's hardcoded
         if guesses == []:
             if isEnglish:
-                return {'salet' : 3.421,
-                        'reast' : 3.422,
-                        'crate' : 3.424,
-                        'trace' : 3.424,
-                        'slate' : 3.431,
-                        'crane' : 3.434}
+                return {
+                    'salet' : 3.421,
+                    'reast' : 3.422,
+                    'crate' : 3.424,
+                    'trace' : 3.424,
+                    'slate' : 3.431,
+                    'crane' : 3.434
+                }
             
-            return {self.encode_guess('salet') : 3.421,
-                    self.encode_guess('reast') : 3.422,
-                    self.encode_guess('crate') : 3.424,
-                    self.encode_guess('trace') : 3.424,
-                    self.encode_guess('slate') : 3.431,
-                    self.encode_guess('crane') : 3.434}
+            return {
+                self.encode_guess('salet') : 3.421,
+                self.encode_guess('reast') : 3.422,
+                self.encode_guess('crate') : 3.424,
+                self.encode_guess('trace') : 3.424,
+                self.encode_guess('slate') : 3.431,
+                self.encode_guess('crane') : 3.434
+            }
         
         # filter the answers, if necessary
         if not isFiltered:
@@ -346,7 +348,7 @@ class WordleBot:
             if isEnglish:
                 return {self.ANSWERS[answers[i]] : score for i in range(len(answers))}
             
-            return {self.GUESSES.index(self.ANSWERS[answers[i]]) : score for i in range(len(answers))}
+            return {answers[i] : score for i in range(len(answers))}
         
         # get the top contenders based on info
         contenders = self.sort_guesses(guesses, outcomes, answers)[:nodes]
@@ -378,36 +380,45 @@ class Tile:
 
         self.colors = ['#3A3A3C','#B1A04C','#618C55']
         
-        frame = Frame(master)
-        frame.grid(column=x+1,row=y+1)
-        
         self.tile = Button(
-            frame,width=100,height=100,          
-            bg=self.colors[color],fg='white',    
-            activebackground=self.colors[color], 
-            bd=0,command=self.next_color,        
-            text=letter,padx=40,pady=40,         
+            master,
+            width=100,
+            height=100,          
+            bg=self.colors[color],
+            fg='white',    
+            activebackground=self.colors[color],
+            bd=0,
+            command=self.next_color,        
+            text=letter,
             justify=CENTER,                      
             font=('clear sans','55','bold'),     
             disabledbackground='#121214',        
-            disabledforeground='white',          
+            disabledforeground='white',
+            highlightcolor='#323232',
             takefocus=0
         )
         
-        self.tile.pack()
+        self.tile.grid(column=x+4,row=y+1,padx=5,pady=5)
         
         self.set_letter(letter,True)
         
     def next_color(self):
-        '''Updates the tile's color'''
-        self.color = (self.color + 1) % 3
-        self.tile['bg'] = self.colors[self.color]
-        self.tile['activebackground'] = self.colors[self.color]
+        '''Increments the tile's color'''
+        self.set_color((self.color + 1) % 3)
+        #dummy.focus()
 
     def get_color(self):
         '''Tile.get_color() -> int
         returns the tile's color'''
         return self.color
+
+    def set_color(self,color):
+        '''Tile.set_color(color) -> None
+        updates the tile's color.'''
+        self.color = color
+        self.tile['bg'] = self.colors[color]
+        self.tile['activebackground'] = self.colors[color]
+        self.tile['highlightcolor'] = self.colors[color]
     
     def get_letter(self):
         '''Tile.get_letter() -> str
@@ -424,16 +435,16 @@ class Tile:
         # update color and lock/unlock tile
         if self.letter == ' ':
             self.color = 0
-            self.tile['bg'] = self.colors[self.color]
-            self.tile['activebackground'] = self.colors[self.color]
             
             if autoLock:
                 self.tile['state'] = DISABLED
+                self.tile['bd'] = 0
+                self.tile['highlightcolor'] = '#323232'
         else:
             self.color = 0
-            self.tile['bg'] == self.colors[self.color]
             
             if autoLock:
+                self.tile['bg'] = self.colors[self.color]
                 self.tile['state'] = NORMAL
 
     def unlock(self, keepColor=False):
@@ -443,27 +454,26 @@ class Tile:
         # reset color
         if not keepColor:
             self.color = 0
-            self.tile['bg'] == self.colors[self.color]
+            
+        self.set_color(self.color)
             
         # enable tile
         self.tile['state'] = NORMAL
-
+        
     def lock(self, keepColor=False):
         '''Tile.lock() -> None
         locks the tile button'''
 
         # reset color
         if not keepColor:
-            self.color = 0
-            self.tile['bg'] = self.colors[self.color]
-            self.tile['activebackground'] = self.colors[self.color]
+            self.set_color(0)
             
         self.tile['state'] = DISABLED
+        self.tile['highlightcolor'] = '#323232'
 
         # fix color
         if keepColor:
-            self.tile['bg'] = self.colors[self.color]
-            self.tile['activebackground'] = self.colors[self.color]
+            self.set_color(self.color)
     
 class WordleGUI(WordleBot,Frame):
     '''a GUI for the Wordle Bot'''
@@ -473,6 +483,7 @@ class WordleGUI(WordleBot,Frame):
         WordleBot.__init__(self)
         Frame.__init__(self,master)
         self.grid()
+        self['bg'] = '#121214'
 
         # attributes
         self.guesses = []
@@ -488,37 +499,58 @@ class WordleGUI(WordleBot,Frame):
         master.bind("<KeyPress>", self.keydown) # keypresses
 
         # CREATE THE INTERFACE
-        Label(self,text='Wordle Bot',font=('clear sans',60,'bold'),anchor=CENTER).grid(column=1,columnspan=5)
+        Label(self,text='Wordle Bot',font=('clear sans',60,'bold'),anchor=CENTER,bg='#121214').grid(column=4,columnspan=5)
         self.gameState = [[Tile(self,' ',0,i,j) for i in range(5)] for j in range(6)]
 
         # The "Calculate" button
         self.calculateButton = Button(
             self,
-            width=150,
-            height=35,
+            width=240,
+            height=47,
             text='Calculate',
             command=self.calculate,
             bg='#618C55',
-            font=('clear sans',20,'bold'),
+            font=('clear sans',30,'bold'),
             fg='white',
             activebackground='#B0C5AA',
             disabledbackground='#808080',
             disabledforeground='white',
+            highlightcolor='#121214',
+            bd=0,
             takefocus=0
         )
         
-        self.calculateButton.grid(row=1,column=7,columnspan=3,sticky=N)
+        self.calculateButton.grid(row=0,column=10,rowspan=2,columnspan=3)
 
         # The list of the best guesses and their respective scores
 
         # the list headers
-        Label(self,text='Guesses\n',font=('clear sans',20,'bold')).grid(row=1,column=7,sticky=S)
-        Label(self,text='Guesses\nRemaining',font=('clear sans',20,'bold')).grid(row=1,column=9,sticky=S)
+        Label(
+            self,
+            text='Guesses',
+            font=('clear sans',24,'bold'),
+            pady=15,
+            bg='#121214'
+        ).grid(row=1,column=10,sticky=S)
+        Label(
+            self,
+            text='Solutions',
+            font=('clear sans',24,'bold'),
+            pady=15,
+            bg='#121214'
+        ).grid(row=1,column=1,sticky=S)
+        Label(
+            self,
+            text='Guesses\nRemaining',
+            font=('clear sans',21,'bold'),
+            bg='#121214',
+            pady=5
+        ).grid(row=1,column=12,sticky=S)
 
         # the actual lists
         self.bestGuessList = Listbox(
             self,
-            font=('clear sans',27),
+            font=('clear sans',30),
             bg='#2B2B2B',
             bd=0,
             height=15,
@@ -530,7 +562,7 @@ class WordleGUI(WordleBot,Frame):
         
         self.bestScoreList = Listbox(
             self,
-            font=('clear sans',27),
+            font=('clear sans',30),
             bg='#2B2B2B',
             bd=0,
             height=15,
@@ -539,15 +571,38 @@ class WordleGUI(WordleBot,Frame):
             width=5,
             takefocus=0
         )
-        
-        self.bestGuessList.grid(row=2,column=7,rowspan=5,sticky=N)
-        self.bestScoreList.grid(row=2,column=9,rowspan=5,sticky=N)
 
+        self.answerList = Listbox(
+            self,
+            font=('clear sans',30),
+            bg='#2B2B2B',
+            bd=0,
+            height=15,
+            highlightthickness=0,
+            selectbackground='#3A3A3C',
+            width=6,
+            takefocus=0
+        )
+        
+        self.bestGuessList.grid(row=2,column=10,rowspan=5,sticky=NS)
+        self.bestScoreList.grid(row=2,column=12,rowspan=5,sticky=NS)
+        self.answerList.grid(row=2,column=1,rowspan=5,sticky=NS)
+
+        # scroll bar
+        self.scrollbar = Scrollbar(self,command=self.answerList.yview)
+        self.scrollbar.grid(row=2,column=2,rowspan=5,sticky=NS)
+        
+        self.answerList.config(yscrollcommand = self.scrollbar.set)
+        
         # spacing
-        Label(self,text='\t').grid(column=0)
-        Label(self,text='\t').grid(column=6)
-        Label(self,text='  ').grid(column=8)
-        Label(self,text='\t').grid(column=10)
+        Label(self,text='\t',font=('sans',20),bg='#121214').grid(column=0,row=0)
+        Label(self,text='\t',font=('sans',20),bg='#121214').grid(column=3,row=0)
+        Label(self,text='\t',font=('sans',20),bg='#121214').grid(column=9,row=0)
+        Label(self,text='  ',font=('sans',20),bg='#121214').grid(column=11,row=0)
+        Label(self,text='\t',font=('sans',20),bg='#121214').grid(column=13,row=0)
+
+        # start up
+        self.calculate()
         
     def keydown(self,event):
         '''When the user types something'''
@@ -613,7 +668,6 @@ class WordleGUI(WordleBot,Frame):
         for row in range(6):
             guess = self.read_guess(row)
             if ' ' in guess:
-                print(guess)
                 break
             else:
                 self.guesses.append(guess)
@@ -651,8 +705,10 @@ class WordleGUI(WordleBot,Frame):
         for row in range(len(self.guesses)):
             for col in range(5):
                 self.gameState[row][col].lock(True)
-            
-        bestGuesses = self.get_best_guesses(self.guesses, self.outcomes, isEnglish=True)
+
+        # get best guesses
+        answers = self.filter_solutions(self.encode_guesses(self.guesses), self.encode_outcomes(self.outcomes))
+        bestGuesses = self.get_best_guesses(self.guesses, self.outcomes, answers, isFiltered=True, isEnglish=True)
 
         # unlock tiles
         for row in range(len(self.guesses)):
@@ -664,20 +720,28 @@ class WordleGUI(WordleBot,Frame):
 
         self.bestGuessList.delete(0,END) # clear the list of optimal guesses
         self.bestScoreList.delete(0,END) # clear the list of scores
+        self.answerList.delete(0,END) # clear the list of answers
 
         # add the stuff to the list box
         numGuesses = len(self.guesses)
-        for guess in bestGuesses.keys():
+        for i, guess in enumerate(bestGuesses.keys()):
             self.bestGuessList.insert(END,' '+guess)
             self.bestScoreList.insert(END,' %0.3f' % (bestGuesses[guess]-numGuesses))
+            if self.encode_guess(guess) in answers:
+                self.bestGuessList.itemconfig(i, fg='#0f0')
+                self.bestScoreList.itemconfig(i, fg='#0f0')
+
+        for answer in answers:
+            self.answerList.insert(END,' '+self.ANSWERS[answer])
 
 # disable key repeats
-os.system('xset r off') 
+os.system('xset r off')
 
 # main loop
 root = Tk()
 root.title('Wordle Solver')
-root.geometry('893x750')
+root['bg'] = '#121214'
+root.geometry('1359x840')
 main = WordleGUI(root)
 root.resizable(False, False)
 root.mainloop()
