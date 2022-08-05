@@ -17,3 +17,5 @@ from `WordleBot GUI.py` (lines 10-13).
 You can type the guesses that you made, just like in Wordle (note that the return/enter key does nothing). All guesses must be valid words, or else you will not be able to click the 'Calculate' button (which calculates the best guess).
 
 For valid guesses, you can click on the tiles to cycle their color between black, yellow, and green.
+
+If it seems to be taking forever to calculate the best guess, you may want to check the console (the window freezes up while calculating, so a progress bar would do nothing). It may be the case that you made an objectively terrible guess.
