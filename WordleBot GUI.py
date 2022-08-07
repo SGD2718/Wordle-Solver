@@ -294,8 +294,10 @@ class WordleBot:
 
                 # add the score to the weighted sum
                 eScore += pOutcome * score
-                
-        return eScore
+
+        # slightly inflate actual solutions
+        # note that lower scores are better
+        return eScore - 0.00000001 * (guess in answers) 
 
 
     def get_best_guesses(self, guesses, outcomes, answers=list(range(2315)), isFiltered=False, isEnglish=False, nodes=17):
