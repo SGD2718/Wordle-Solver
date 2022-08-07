@@ -604,7 +604,7 @@ class WordleGUI(WordleBot,Frame):
             height=17,
             highlightthickness=0,
             selectbackground='#3A3A3C',
-            width=5,
+            width=6,
             takefocus=0
         )
         
