@@ -18,4 +18,6 @@ You can type the guesses that you made, just like in Wordle (note that the retur
 
 For valid guesses, you can click on the tiles to cycle their color between black, yellow, and green.
 
-If it seems to be taking forever to calculate the best guess, you may want to check the console (the window freezes up while calculating, so a progress bar would do nothing). It may be the case that you made an objectively terrible guess.
+If it seems to be taking forever (longer than 2 minutes) to calculate the best guess, it may be the case that you made an objectively terrible guess, or you just got unlucky and ended up eliminating very few words.
+
+Note that all the contenders for the best guess are calculated at once (using threads) so you may have to wait over a minute for that progress bar to stop displaying 0% (which usually happens when the hint revealed is ⬛️⬛️⬛️⬛️⬛️).
