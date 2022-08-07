@@ -898,7 +898,7 @@ root.title('Wordle Solver')
 root['bg'] = '#121214'
 root.geometry('1359x840')
 main = WordleGUI(root)
-#root.resizable(False, False)
+root.resizable(False, False)
 root.mainloop()
 
 # enable key repeats because we don't want to mess up the user's computer settings.
