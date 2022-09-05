@@ -39,7 +39,6 @@ agile
 aging
 aglow
 agony
-agora
 agree
 ahead
 aider
@@ -724,7 +723,6 @@ fetus
 fever
 fewer
 fiber
-fibre
 ficus
 field
 fiend
@@ -1173,7 +1171,6 @@ lurid
 lusty
 lying
 lymph
-lynch
 lyric
 macaw
 macho
@@ -1492,7 +1489,6 @@ puffy
 pulpy
 pulse
 punch
-pupal
 pupil
 puppy
 puree
@@ -1776,7 +1772,6 @@ slang
 slant
 slash
 slate
-slave
 sleek
 sleep
 sleet
@@ -2242,7 +2237,6 @@ weigh
 weird
 welch
 welsh
-wench
 whack
 whale
 wharf
@@ -2464,6 +2458,7 @@ agoge
 agone
 agons
 agood
+agora
 agria
 agrin
 agros
@@ -5331,6 +5326,7 @@ fezes
 fezzy
 fiars
 fiats
+fibre
 fibro
 fices
 fiche
@@ -7724,6 +7720,7 @@ lycea
 lycee
 lycra
 lymes
+lynch
 lynes
 lyres
 lysed
@@ -9507,6 +9504,7 @@ punto
 punts
 punty
 pupae
+pupal
 pupas
 pupus
 purda
@@ -10722,6 +10720,7 @@ slaps
 slart
 slats
 slaty
+slave
 slaws
 slays
 slebs
@@ -12486,6 +12485,7 @@ wells
 welly
 welts
 wembs
+wench
 wends
 wenge
 wenny
