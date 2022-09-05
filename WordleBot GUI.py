@@ -5,6 +5,7 @@ from tkinter import ttk
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 import os
+#import numpy as np
 
 try:
     from tkmacosx import Button, Scrollbar
@@ -34,7 +35,7 @@ class WordleBot:
         with open('outcomes.txt','r') as outcomefile:
             self.OUTCOMES = [list(map(int,line.split())) for line in outcomefile]
 
-    def filter_solutions(self, guesses, outcomes, answers=list(range(2315))):
+    def filter_solutions(self, guesses, outcomes, answers=list(range(2309))):
         '''WordleBot.filter_solutions(guessesIdx, outcomes, answersIdx) -> list
         returns the indices of the remaining solutions.
             guesses: the indices of all the guesses.
@@ -69,18 +70,18 @@ class WordleBot:
         # of the remaining solutions
         return solutions
 
-    def get_expected_info(self, guess, answers=list(range(2315))):
+    def get_expected_info(self, guess, answers=list(range(2309))):
         '''WordleBot.get_expected_info(guess, guesses, outcomes) -> float
         returns the expected information of a guess
             guess: the index of the guess.
             answers: the indices of the remaining solutions
         CAUTION: ASSUMES THAT ANSWERS IS ALREADY FILTERED'
-            '''
+        '''
 
         # count the number of
         # occurences of each
         # outcome
-        outcomeCounts = [0] * 243
+        outcomeCounts = [0]*243
 
         for answer in answers:
             outcomeCounts[self.OUTCOMES[answer][guess]] += 1
@@ -93,31 +94,38 @@ class WordleBot:
                 # 1 / p(outcome)
                 pOutcome = outcomeCount / len(answers)
                 # E[I] = ∑p(x) * log2(1/p(x))
-                expected_info -= pOutcome * log2(pOutcome)
+                expected_info -= pOutcome * log(pOutcome)
 
+        # check if the guess is a valid answer
+        minBound = 0
+        maxBound = len(answers) - 1
+        isAnAnswer = False
+
+        # quick search (binary search but slightly faster)
+        while maxBound > minBound:
+            index = (minBound+maxBound) // 2
+            if answers[index] > guess:
+                maxBound = index - 1
+            elif answers[index] < guess:
+                minBound = index + 1
+            else:
+                expected_info += 0.0001
+                break
+            
         # return expected info
         return expected_info
 
-    def sort_guesses(self, guesses, outcomes, answers=list(range(2315))):
+    def sort_guesses(self, guesses, outcomes, answers=list(range(2309))):
         '''WordleBot.sort_guesses(amt guesses, outcomes, answers) -> list
         sorts the possible guesses based on
         information and returns the sorted list
         CAUTION: ASSUMES THAT ANSWERS IS ALREADY FILTERED'''
-        infoDict = {}
-
-        # iterate through each word
-        for guess in range(len(self.GUESSES)):
-            
-            # add word and its expected 
-            # info to the info distribution
-            
-            if not guess in guesses: # reduces runtime
-                infoDict[guess] = self.get_expected_info(guess, answers)
+        infoDict = {guess : self.get_expected_info(guess, answers) for guess in range(len(self.GUESSES)) if not guess in guesses}
 
         # return the guesses in order of information
         return sorted(infoDict, key=lambda guess : infoDict[guess], reverse=True)
 
-    def get_expected_score(self, guesses, outcomes, answers=list(range(2315)), nodes=17, cutoff=6):
+    def get_expected_score(self, guesses, outcomes, answers=list(range(2309)), nodes=17, cutoff=6):
         '''WordleBot.get_expected_score(guesses, outcomes, answers, alpha) -> float
         returns the expected score of a position
             guesses: the list of guesses in the current game
@@ -134,9 +142,11 @@ class WordleBot:
         # score if we are in a determinant
         # state or if we've made too many
         # guesses
-        if len(answers) < 3:
+        if outcomes[-1] == 242:
+            return len(guesses)
+        if len(answers) in (1, 2):
             return len(guesses) + 2 - 1 / len(answers)
-        elif len(guesses) >= cutoff:
+        elif len(guesses) >= cutoff: # instant pruning
             return len(guesses)
 
         # get the top 'nodes' guesses
@@ -144,14 +154,19 @@ class WordleBot:
         # and brute-force them.
         contenders = self.sort_guesses(guesses, outcomes, answers)[:nodes]
 
-        for guess in contenders:
-            # make the guess
-            newGuesses = guesses+[guess]
-            
+        # increase length of guesses and outcomes
+        guesses.append(0)
+        outcomes.append(0)
+
+        # brute force the expected score
+        for guess in contenders:            
             # count the number of
-            # occurences of each
+            # occurences for each
             # outcome
-            outcomeCounts = [0] * 243
+            outcomeCounts = [0]*243
+
+            # make the guess
+            guesses[-1] = guess
 
             for answer in answers:
                 outcomeCounts[self.OUTCOMES[answer][guess]] += 1
@@ -165,13 +180,14 @@ class WordleBot:
                     # get the probability of the outcome
                     pOutcome = outcomeCounts[outcome] / len(answers)
 
-                    # add the outcome to the list of
-                    # outcomes and filter the solutions
-                    newOutcomes = outcomes+[outcome]
-                    solutions = self.filter_solutions(newGuesses,newOutcomes,answers)
+                    # set the outcome
+                    outcomes[-1] = outcome
+
+                    # filter solutions
+                    solutions = [answer for answer in answers if self.OUTCOMES[answer][guess] == outcome]
                     
                     # calculate the expected score for the position
-                    score = self.get_expected_score(newGuesses, newOutcomes, solutions, nodes, cutoff)
+                    score = self.get_expected_score(guesses, outcomes, solutions, nodes, cutoff)
 
                     # add the score to the weighted sum
                     eScore += pOutcome * score
@@ -184,6 +200,10 @@ class WordleBot:
             # set new benchmark
             if eScore < cutoff:
                 cutoff = eScore
+
+        # remove the excess element from the list
+        guesses.pop()
+        outcomes.pop()
 
         # return the lowest expected score
         return cutoff
@@ -252,7 +272,7 @@ class WordleBot:
                 
         return encodedOutcomes
 
-    def analyze_guess(self, guess, guesses, outcomes, answers = list(range(2315)), isFiltered = False, nodes = 19):
+    def analyze_guess(self, guess, guesses, outcomes, answers = list(range(2309)), isFiltered = False, nodes = 19):
         '''WordleBot.analyze_guess(guess, guesses, outcomes, answers, isFiltered, nodes) -> float
         returns the expected score of a guess (rather than a position)'''
 
@@ -266,7 +286,7 @@ class WordleBot:
         # count the number of
         # occurences of each
         # outcome
-        outcomeCounts = [0] * 243
+        outcomeCounts = [0]*243
 
         # filter answers, if necessary
         if not isFiltered:
@@ -284,10 +304,10 @@ class WordleBot:
                 # get the probability of the outcome
                 pOutcome = outcomeCounts[outcome] / len(answers)
 
-                # add the outcome to the list of
-                # outcomes and filter the solutions
+                # add the outcome to the list of outcomes
                 newOutcomes = outcomes+[outcome]
-                solutions = self.filter_solutions(newGuesses,newOutcomes,answers)
+                # filter solutions
+                solutions = [answer for answer in answers if self.OUTCOMES[answer][guess] == outcome]
                 
                 # calculate the expected score for the position
                 score = self.get_expected_score(newGuesses,newOutcomes,solutions,nodes)
@@ -300,7 +320,7 @@ class WordleBot:
         return eScore - 0.00000001 * (guess in answers) 
 
 
-    def get_best_guesses(self, guesses, outcomes, answers=list(range(2315)), isFiltered=False, isEnglish=False, nodes=17):
+    def get_best_guesses(self, guesses, outcomes, answers=list(range(2309)), isFiltered=False, isEnglish=False, nodes=17):
         '''WordleBot.get_best_guesses(guesses, outcomes, amt, answers, isFiltered, nodes) -> list
         returns the indices of the top n best guesses, or just returns those guesses.
             guesses: the indices of all the guesses or the guesses themselves
@@ -371,25 +391,12 @@ class WordleBot:
         
         return scoreDict
 
-class Tile(Frame):
+class Tile:
     '''a tile for the Wordle GUI'''
     
     def __init__(self, master, letter, color, x, y):
         '''Tile(master, letter, color, row, col) -> Tile'''
-        '''Frame.__init__(
-            self,
-            master,
-            width=50,
-            height=50,
-            highlightthickness=2,
-            bd=2,
-            bg='#323232',
-            highlightcolor='#323232',
-            highlightbackground='#323232'
-        )
-        self.grid(column=x+4,row=y+1,padx=5,pady=5)'''
-        
-        self.master=master
+        self.master = master
         self.color = color
         self.letter = letter
         self.pos = [x+4,y+1]
@@ -503,11 +510,6 @@ class Tile(Frame):
             self.set_color(0)
             
         self.tile.configure(state=DISABLED,highlightcolor='#323232',highlightbackground='#323232')
-        '''self.configure(
-            bg='#323232',
-            highlightcolor='#323232',
-            highlightbackground='#323232'
-        )'''
 
         # fix color
         if keepColor:
@@ -590,7 +592,7 @@ class WordleGUI(WordleBot,Frame):
 
         self.solutionsLabel = Label(
             self,
-            text='Solutions (2315)',
+            text='Solutions (2309)',
             font=('clear sans',24,'bold'),
             pady=15,
             bg='#121214'
@@ -647,7 +649,7 @@ class WordleGUI(WordleBot,Frame):
         # start up
         self.calculate()
         
-    def keydown(self,event):
+    def keydown(self, event):
         '''When the user types something'''
         if event.char.isalpha() and self.canType and not (self.keyRow == 6 or self.isCalculating):
 
@@ -752,9 +754,16 @@ class WordleGUI(WordleBot,Frame):
         for row in range(len(self.guesses)):
             for col in range(5):
                 self.gameState[row][col].lock(True)
-
-        # get best guesses
+                
+        # update solutions
+        self.answerList.delete(0,END) # clear the list of answers
         answers = self.filter_solutions(self.encode_guesses(self.guesses), self.encode_outcomes(self.outcomes))
+        self.solutionsLabel['text'] = 'Solutions ({:d})'.format(len(answers))
+        
+        for answer in answers:
+            self.answerList.insert(END,' '+self.ANSWERS[answer])
+            
+        # get best guesses
         bestGuesses = self.get_best_guesses(self.guesses, self.outcomes, answers, True, True)
 
         # unlock tiles
@@ -767,7 +776,6 @@ class WordleGUI(WordleBot,Frame):
 
         self.bestGuessList.delete(0,END) # clear the list of optimal guesses
         self.bestScoreList.delete(0,END) # clear the list of scores
-        self.answerList.delete(0,END) # clear the list of answers
         
         # add the stuff to the list boxes
         numGuesses = len(self.guesses)
@@ -778,13 +786,7 @@ class WordleGUI(WordleBot,Frame):
                 self.bestGuessList.itemconfig(i, fg='#0f0')
                 self.bestScoreList.itemconfig(i, fg='#0f0')
 
-        # update solutions
-        self.solutionsLabel['text'] = 'Solutions ({:d})'.format(len(answers))
-        
-        for answer in answers:
-            self.answerList.insert(END,' '+self.ANSWERS[answer])
-
-    def get_best_guesses(self, guesses, outcomes, answers=list(range(2315)), isFiltered=False, isEnglish=False, nodes=17):
+    def get_best_guesses(self, guesses, outcomes, answers=list(range(2309)), isFiltered=False, isEnglish=False, nodes=17):
         '''WordleGUI.get_best_guesses(guesses, outcomes, amt, answers, isFiltered, nodes) -> list
         returns the indices of the top n best guesses, or just returns those guesses.
             guesses: the indices of all the guesses or the guesses themselves
@@ -845,12 +847,13 @@ class WordleGUI(WordleBot,Frame):
         pbstyle.theme_use('clam')
         pbstyle.configure(
             "green.Horizontal.TProgressbar",
-            foreground='#00ff00',
-            background='#00ff00',
+            foreground='#0f0',
+            background='#0f0',
             troughcolor='#121214',
-            lightcolor='#00ff00',
-            darkcolor='#00ff00',
-            bordercolor='white')
+            lightcolor='#0f0',
+            darkcolor='#0f0',
+            bordercolor='white'
+        )
         
         progressBar = ttk.Progressbar(
             self,
@@ -870,7 +873,7 @@ class WordleGUI(WordleBot,Frame):
         
         # evaluate the expected score of each guess
         with ThreadPoolExecutor(max_workers=numEvaluated) as executor:
-            scores = [executor.submit(self.analyze_guess, guess, guesses, outcomes, answers, True, nodes) for guess in contenders]
+            scores = [executor.submit(self.analyze_guess,guess,guesses,outcomes,answers,True,nodes) for guess in contenders]
 
             # update progress each time a thread is completed
             for _ in as_completed(scores):
@@ -889,6 +892,7 @@ class WordleGUI(WordleBot,Frame):
             return {self.GUESSES[key] : scoreDict[key] for key in scoreDict.keys()}
         
         return scoreDict
+    
 # disable key repeats
 os.system('xset r off')
 
@@ -902,4 +906,4 @@ root.resizable(False, False)
 root.mainloop()
 
 # enable key repeats because we don't want to mess up the user's computer settings.
-os.system('xset r on') 
+os.system('xset r on')
